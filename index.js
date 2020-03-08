@@ -27,7 +27,8 @@ const Farmbot = require("farmbot").Farmbot;
 //   https://developer.farm.bot/docs/rest-api#section-generating-an-api-token
 // Learn more about Axios the HTTP client here:
 //   https://github.com/axios/axios
-const post = require("axios").post;
+const axios = require("axios"),
+post = axios.post;
 
 // Now that we have loaded all the third party libraries,
 // Let's store some application config as constants.
@@ -50,7 +51,7 @@ const APPLICATION_STATE = {
   // This application is trivial- it just moves the
   // Z-axis up and down. We will keep track of that
   // here.
-  direction: "up",
+  direction: "down",
   // The correct way to track FarmBot's busy state
   // is via Javascript "Promises". Promises are beyond
   // the scope of this example, so we will just use
@@ -61,8 +62,68 @@ const APPLICATION_STATE = {
   // will make your code very clean once you understand
   // them.
   // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise
-  busy: false
+  busy: false,
+  token: null
 };
+
+
+//Récupère les données du capteur d'humidité, affiche et renvoit la dernière valeur
+function soilSensor(){
+  var valeur=0;
+  APPLICATION_STATE.farmbot.readPin({pin_number: 59, pin_mode: 0}).catch(function(erreur){
+      console.log(erreur);
+  });
+
+  return axios.get("https://my.farm.bot/api/sensor_readings", { 'headers': { 'Authorization': APPLICATION_STATE.token } } ).then((res) => {
+      var i = 1;
+      while(res.data[res.data.length-i].pin!=59){
+        i++;
+      }
+      console.log(res.data[res.data.length-i].value);
+      valeur=res.data[res.data.length-i].value;
+      return valeur;
+  });
+
+}
+
+//affiche et renvoit un tableau contenant l'intensité des précipitations des 12 prochaines heures
+function precipIntensity(){
+  return axios.get("https://api.darksky.net/forecast/83a42c27e8d21e20e138b4691e6aa8d3/42.3601,-71.0589").then((res) => {
+    var tabPrecip = [];
+    for(let i=0; i<12; i++){
+      tabPrecip[i] = res.data.hourly.data[i].precipIntensity;
+      console.log(tabPrecip[i]);
+    }
+    return tabPrecip;
+  })
+}
+
+//affiche et renvoit un tableau contenant l'intensité multipliée par la probabilité de précipitation des 12 prochaines heures
+function precipIntensityProba(){
+  return axios.get("https://api.darksky.net/forecast/83a42c27e8d21e20e138b4691e6aa8d3/42.3601,-71.0589").then((res) => {
+    var tabPrecipProba = [];
+    for(let i=0; i<12; i++){
+      tabPrecipProba[i] = res.data.hourly.data[i].precipIntensity*res.data.hourly.data[i].precipProbability;
+      //console.log(tabPrecipProba[i]);
+    }
+    return tabPrecipProba;
+  })
+}
+
+//renvoit (besoin en eau) - (addition des précipitations des 12 prochaines heures) 
+async function howMuchWatering(need){
+  var tab = await precipIntensityProba();
+  var precip = 0;
+  for(let i=0; i<tab.length; i++){
+    precip+=tab[i];
+  }
+  var res = need-precip;
+  if(res<0){
+    return 0;
+  } else {
+    return res;
+  }
+}
 
 // The function below will be used to extract a JSON
 // Web Token (JWT) from the Farmbot server. It is
@@ -70,6 +131,7 @@ const APPLICATION_STATE = {
 // request by Axios later. Continue reading to learn more.
 const tokenOK = (response) => {
   console.log("GOT TOKEN: " + response.data.token.encoded);
+  APPLICATION_STATE.token = response.data.token.encoded;
   return response.data.token.encoded;
 };
 
@@ -134,7 +196,7 @@ const loop = () => {
     // Move the bot up.
     APPLICATION_STATE
       .farmbot
-      .moveRelative({ x: 0, y: 0, z: 1 })
+      .moveRelative({ x: 0, y: 0, z: 20 })
       .then(() => {
         APPLICATION_STATE.direction = "down";
         APPLICATION_STATE.busy = false;
@@ -144,7 +206,7 @@ const loop = () => {
     // Move the bot down.
     APPLICATION_STATE
       .farmbot
-      .moveRelative({ x: 0, y: 0, z: -1 })
+      .moveRelative({ x: 0, y: 0, z: -20 })
       .then(() => {
         APPLICATION_STATE.direction = "up";
         APPLICATION_STATE.busy = false;
@@ -158,21 +220,35 @@ const loop = () => {
 // loop.
 // I've added a quick "safety check" in case
 // `.env` is missing:
+var main = async () => {
 if (PASSWORD && EMAIL) {
   // It is important to use promises here-
   // The run loop won't start until we are finished
   // connecting t the server. If we don't do this,
   // the app might try to send commands before we
   // are connected to the server
-  start()
+  await start();
     // setInterval will call a function every X milliseconds.
     // In our case, it is the main loop.
     // https://www.w3schools.com/jsref/met_win_setinterval.asp
-    .then(() => setInterval(loop, 3000));
+
+    //await setInterval(loop, 3000);
+    //await soilSensor();
+    //console.log("intensity");
+    //await precipIntensity();
+    //console.log("intensity+proba");
+    //await precipIntensityProba()
+    var res = await howMuchWatering(2);
+    console.log(res);
+    console.log("done");
+
 } else {
   // You should not see this message if your .env file is correct:
   throw new Error("You did not set FARMBOT_EMAIL or FARMBOT_PASSWORD in the .env file.");
 }
+};
+
+main();
 
 // That's the end of the tutorial!
 // The most important next step is to learn FarmBotJS.
