@@ -83,34 +83,67 @@ function soilSensor(){
       valeur=res.data[res.data.length-i].value;
       return valeur;
   });
-
 }
 
-//affiche et renvoit un tableau contenant l'intensité des précipitations des 12 prochaines heures
+//Retourne un tableau contenant les informations sur toutes les plantes (dont la position qui va nous intéresser)
+function PlantArray(){
+  var tab = [];
+  return axios.get("https://my.farm.bot/api/points", { 'headers': { 'Authorization': APPLICATION_STATE.token } } ).then((res) => {
+      for(let i=0; i<res.data.length; i++){
+        if(res.data[i].pointer_type == 'Plant'){
+          tab.push(res.data[i]);
+        }
+      }
+      return tab;
+    });
+}
+
+//Positionne le robot en (x,y)
+function goTo(x,y){
+  APPLICATION_STATE.farmbot.moveAbsolute({x: x, y: y, z: 0});
+}
+
+//Positionne le robot au-dessus de la ième plante 
+async function goToPlant(i){
+  var plantes = await PlantArray();
+  var x = plantes[i].x;
+  var y = plantes[i].y;
+  await goTo(x,y);
+}
+
+//Pour l'instant essai avec le pin 7 (LED)
+function water(time){
+  APPLICATION_STATE.farmbot.writePin({pin_number: 7, pin_mode: 0, pin_value: 1});
+  function stopWater(){
+    APPLICATION_STATE.farmbot.writePin({pin_number: 7, pin_mode: 0, pin_value: 0})
+  }
+  setTimeout(stopWater, time);
+}
+
+//Renvoit un tableau contenant l'intensité des précipitations des 12 prochaines heures
 function precipIntensity(){
   return axios.get("https://api.darksky.net/forecast/83a42c27e8d21e20e138b4691e6aa8d3/42.3601,-71.0589").then((res) => {
     var tabPrecip = [];
     for(let i=0; i<12; i++){
       tabPrecip[i] = res.data.hourly.data[i].precipIntensity;
-      console.log(tabPrecip[i]);
     }
     return tabPrecip;
-  })
+  });
 }
 
-//affiche et renvoit un tableau contenant l'intensité multipliée par la probabilité de précipitation des 12 prochaines heures
+//Renvoit un tableau contenant l'intensité multipliée par la probabilité de précipitation des 12 prochaines heures
 function precipIntensityProba(){
   return axios.get("https://api.darksky.net/forecast/83a42c27e8d21e20e138b4691e6aa8d3/42.3601,-71.0589").then((res) => {
     var tabPrecipProba = [];
     for(let i=0; i<12; i++){
       tabPrecipProba[i] = res.data.hourly.data[i].precipIntensity*res.data.hourly.data[i].precipProbability;
-      //console.log(tabPrecipProba[i]);
     }
     return tabPrecipProba;
   })
 }
 
-//renvoit (besoin en eau) - (addition des précipitations des 12 prochaines heures) 
+//Renvoit (besoin en eau) - (addition des précipitations des 12 prochaines heures) 
+//à ajuster et à voir en fonction du nombre d'arrosage par jour
 async function howMuchWatering(need){
   var tab = await precipIntensityProba();
   var precip = 0;
@@ -228,19 +261,20 @@ if (PASSWORD && EMAIL) {
   // the app might try to send commands before we
   // are connected to the server
   await start();
-    // setInterval will call a function every X milliseconds.
-    // In our case, it is the main loop.
-    // https://www.w3schools.com/jsref/met_win_setinterval.asp
+  // setInterval will call a function every X milliseconds.
+  // In our case, it is the main loop.
+  // https://www.w3schools.com/jsref/met_win_setinterval.asp
 
-    //await setInterval(loop, 3000);
-    //await soilSensor();
-    //console.log("intensity");
-    //await precipIntensity();
-    //console.log("intensity+proba");
-    //await precipIntensityProba()
-    var res = await howMuchWatering(2);
-    console.log(res);
-    console.log("done");
+  //await setInterval(loop, 3000);
+  //await soilSensor();
+  //console.log("intensity");
+  //await precipIntensity();
+  //console.log("intensity+proba");
+  //await precipIntensityProba()
+  //var res = await howMuchWatering(2);
+  //console.log(res);
+  //await goToPlant(5);
+  await water(10000);
 
 } else {
   // You should not see this message if your .env file is correct:
