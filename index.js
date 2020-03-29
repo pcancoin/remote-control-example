@@ -98,9 +98,10 @@ function PlantArray(){
     });
 }
 
-//Positionne le robot en (x,y)
-function goTo(x,y){
-  APPLICATION_STATE.farmbot.moveAbsolute({x: x, y: y, z: 0});
+//Positionne le robot en (x,y,z)
+//il faut mettre un return je crois
+function goTo(x,y,z){
+  APPLICATION_STATE.farmbot.moveAbsolute({x: x, y: y, z: z});
 }
 
 //Positionne le robot au-dessus de la ième plante 
@@ -108,7 +109,7 @@ async function goToPlant(i){
   var plantes = await PlantArray();
   var x = plantes[i].x;
   var y = plantes[i].y;
-  await goTo(x,y);
+  await goTo(x,y,0);
 }
 
 //Pour l'instant essai avec le pin 7 (LED)
@@ -119,6 +120,29 @@ function water(time){
   }
   setTimeout(stopWater, time);
 }
+
+
+//Monte l'outil tamis pour arroser sur la tête
+//id de l'outil watering nozzle : 7043
+function mountWateringNozzle(){
+  return axios.get("https://my.farm.bot/api/sequences", { 'headers': { 'Authorization': APPLICATION_STATE.token } } ).then((res) => {
+    APPLICATION_STATE.farmbot.execSequence(24863);
+    return res.data;
+  });
+}
+
+
+//A faire avec les sequences
+//Remet l'outil à sa place puis homing
+//Bug avec les fonctions asynchrones
+async function unmountWateringNozzle(){
+  await goTo(100,429,-385);
+  await goTo(10,429,-385);
+  await goTo(10,429,0);
+  await APPLICATION_STATE.farmbot.home({axis: "x", axis: "y",axis: "z", speed: 800});
+}
+
+
 
 //Renvoit un tableau contenant l'intensité des précipitations des 12 prochaines heures
 function precipIntensity(){
@@ -274,7 +298,10 @@ if (PASSWORD && EMAIL) {
   //var res = await howMuchWatering(2);
   //console.log(res);
   //await goToPlant(5);
-  await water(10000);
+  //await water(5000);
+  await mountWateringNozzle();
+  //await unmountWateringNozzle();
+  
 
 } else {
   // You should not see this message if your .env file is correct:
