@@ -126,7 +126,18 @@ function water(time){
 //id de l'outil watering nozzle : 7043
 function mountWateringNozzle(){
   return axios.get("https://my.farm.bot/api/sequences", { 'headers': { 'Authorization': APPLICATION_STATE.token } } ).then((res) => {
-    APPLICATION_STATE.farmbot.execSequence(24863);
+    APPLICATION_STATE.farmbot.execSequence(24863, [{
+      kind: "parameter_declaration",
+      args: {
+        default_value: {
+          kind: "tool",
+          args: {
+            tool_id: 7043,
+          },
+        },
+        label: "parent",
+      }
+    },]);
     return res.data;
   });
 }
