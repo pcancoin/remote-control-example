@@ -79,14 +79,14 @@ function soilSensor(){
       while(res.data[res.data.length-i].pin!=59){
         i++;
       }
-      console.log(res.data[res.data.length-i].value);
       valeur=res.data[res.data.length-i].value;
+      console.log(valeur);
       return valeur;
   });
 }
 
 //Retourne un tableau contenant les informations sur toutes les plantes (dont la position qui va nous intéresser)
-function PlantArray(){
+function plantArray(){
   var tab = [];
   return axios.get("https://my.farm.bot/api/points", { 'headers': { 'Authorization': APPLICATION_STATE.token } } ).then((res) => {
       for(let i=0; i<res.data.length; i++){
@@ -94,6 +94,7 @@ function PlantArray(){
           tab.push(res.data[i]);
         }
       }
+      console.log(tab);
       return tab;
     });
 }
@@ -106,23 +107,41 @@ function goTo(x,y,z){
 
 //Positionne le robot au-dessus de la ième plante 
 async function goToPlant(i){
-  var plantes = await PlantArray();
+  var plantes = await plantArray();
   var x = plantes[i].x;
   var y = plantes[i].y;
   await goTo(x,y,0);
 }
 
-//Pour l'instant essai avec le pin 7 (LED)
+//allume l'electrovanne pendant le temps défini en paramètre
 function water(time){
-  APPLICATION_STATE.farmbot.writePin({pin_number: 7, pin_mode: 0, pin_value: 1});
+  APPLICATION_STATE.farmbot.writePin({pin_number: 8, pin_mode: 0, pin_value: 1});
   function stopWater(){
-    APPLICATION_STATE.farmbot.writePin({pin_number: 7, pin_mode: 0, pin_value: 0})
+    APPLICATION_STATE.farmbot.writePin({pin_number: 8, pin_mode: 0, pin_value: 0})
   }
   setTimeout(stopWater, time);
 }
 
+//arrose toutes les plantes
+async function waterPlants(time){
+  await mountWateringNozzle();
+  var plantes = await plantArray();
+  for (let i=0; i<plantes.length; i++){
+    await goToPlant(i);
+    await water(time);
+  }
+  await unmountWateringNozzle();
+}
 
-//Monte l'outil tamis pour arroser sur la tête
+//affiche et renvoit la liste des séquences
+function getSequences(){
+  return axios.get("https://my.farm.bot/api/sequences", { 'headers': { 'Authorization': APPLICATION_STATE.token } } ).then((res) => {
+    console.log(res.data[6]);
+    return res.data;
+  });
+}
+
+//Monte l'outil tamis pour arroser
 //id de l'outil watering nozzle : 7043
 function mountWateringNozzle(){
   return axios.get("https://my.farm.bot/api/sequences", { 'headers': { 'Authorization': APPLICATION_STATE.token } } ).then((res) => {
@@ -143,14 +162,12 @@ function mountWateringNozzle(){
 }
 
 
-//A faire avec les sequences
-//Remet l'outil à sa place puis homing
-//Bug avec les fonctions asynchrones
+//lance la séquence unmount tool avec l'outil prédéfini dans l'application
 async function unmountWateringNozzle(){
-  await goTo(100,429,-385);
-  await goTo(10,429,-385);
-  await goTo(10,429,0);
-  await APPLICATION_STATE.farmbot.home({axis: "x", axis: "y",axis: "z", speed: 800});
+  return axios.get("https://my.farm.bot/api/sequences", { 'headers': { 'Authorization': APPLICATION_STATE.token } } ).then((res) => {
+    APPLICATION_STATE.farmbot.execSequence(24867);
+    return res.data;
+  });
 }
 
 
@@ -162,6 +179,7 @@ function precipIntensity(){
     for(let i=0; i<12; i++){
       tabPrecip[i] = res.data.hourly.data[i].precipIntensity;
     }
+    console.log(tabPrecip);
     return tabPrecip;
   });
 }
@@ -173,6 +191,7 @@ function precipIntensityProba(){
     for(let i=0; i<12; i++){
       tabPrecipProba[i] = res.data.hourly.data[i].precipIntensity*res.data.hourly.data[i].precipProbability;
     }
+    console.log(tabPrecipProba);
     return tabPrecipProba;
   })
 }
@@ -310,8 +329,9 @@ if (PASSWORD && EMAIL) {
   //console.log(res);
   //await goToPlant(5);
   //await water(5000);
-  await mountWateringNozzle();
+  //await mountWateringNozzle();
   //await unmountWateringNozzle();
+  //await getSequences();
   
 
 } else {
