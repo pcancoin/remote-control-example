@@ -80,7 +80,7 @@ function soilSensor(){
         i++;
       }
       valeur=res.data[res.data.length-i].value;
-      console.log(valeur);
+      //console.log(valeur);
       return valeur;
   });
 }
@@ -94,7 +94,7 @@ function plantArray(){
           tab.push(res.data[i]);
         }
       }
-      console.log(tab);
+      //console.log(tab);
       return tab;
     });
 }
@@ -133,13 +133,28 @@ async function waterPlants(time){
   await unmountWateringNozzle();
 }
 
-//affiche et renvoit la liste des séquences
+async function test(){
+  await mountWateringNozzle();
+  await unmountWateringNozzle();
+}
+
+
+//Renvoit la liste des séquences
 function getSequences(){
   return axios.get("https://my.farm.bot/api/sequences", { 'headers': { 'Authorization': APPLICATION_STATE.token } } ).then((res) => {
-    console.log(res.data[6]);
+    console.log(res.data);
     return res.data;
   });
 }
+
+//Renvoit la liste des outils
+function getTools(){
+  return axios.get("https://my.farm.bot/api/tools", { 'headers': { 'Authorization': APPLICATION_STATE.token } } ).then((res) => {
+    console.log(res.data);
+    return res.data;
+  });
+}
+
 
 //Monte l'outil tamis pour arroser
 //id de l'outil watering nozzle : 7043
@@ -150,7 +165,7 @@ function mountWateringNozzle(){
       kind: "parameter_application",
       args: {
         label: "parent",
-        data_value: { kind: "tool", args: { tool_id: 7043 } }
+        data_value: { kind: "tool", args: { tool_id: 7041 } }
       }
     }]);
     
@@ -162,7 +177,13 @@ function mountWateringNozzle(){
 //lance la séquence unmount tool avec l'outil prédéfini dans l'application
 async function unmountWateringNozzle(){
   return axios.get("https://my.farm.bot/api/sequences", { 'headers': { 'Authorization': APPLICATION_STATE.token } } ).then((res) => {
-    APPLICATION_STATE.farmbot.execSequence(24867);
+    APPLICATION_STATE.farmbot.execSequence(24867, [{
+      kind: "parameter_application",
+      args: {
+        label: "parent",
+        data_value: { kind: "tool", args: { tool_id: 7041 } }
+      }
+    }]);
     return res.data;
   });
 }
@@ -176,7 +197,7 @@ function precipIntensity(){
     for(let i=0; i<12; i++){
       tabPrecip[i] = res.data.hourly.data[i].precipIntensity;
     }
-    console.log(tabPrecip);
+    //console.log(tabPrecip);
     return tabPrecip;
   });
 }
@@ -188,7 +209,7 @@ function precipIntensityProba(){
     for(let i=0; i<12; i++){
       tabPrecipProba[i] = res.data.hourly.data[i].precipIntensity*res.data.hourly.data[i].precipProbability;
     }
-    console.log(tabPrecipProba);
+    //console.log(tabPrecipProba);
     return tabPrecipProba;
   })
 }
@@ -207,6 +228,15 @@ async function howMuchWatering(need){
   } else {
     return res;
   }
+}
+
+//renvoit le temps d'arrosage nécessaire pour une plante
+//paramètres : mm par seconde de notre pompe, et besoin en eau en ml d'une plante
+async function getTime(mmPerSec, need){
+  var water = await howMuchWatering(need);
+  var res = water/mmPerSec;
+  //console.log(res);
+  return res;
 }
 
 // The function below will be used to extract a JSON
@@ -327,10 +357,13 @@ if (PASSWORD && EMAIL) {
   //console.log(res);
   //await goToPlant(5);
   //await water(5000);
-  let resss = await mountWateringNozzle();
-
+  //await mountWateringNozzle();
   //await unmountWateringNozzle();
   //await getSequences();
+  //await getTime(1.5,2);
+  //await waterPlants(5000);
+  //await test();
+  //getTools();
   
 
 } else {
