@@ -125,19 +125,16 @@ function water(time){
 //Monte l'outil tamis pour arroser sur la tête
 //id de l'outil watering nozzle : 7043
 function mountWateringNozzle(){
+  console.log("Debut");
   return axios.get("https://my.farm.bot/api/sequences", { 'headers': { 'Authorization': APPLICATION_STATE.token } } ).then((res) => {
     APPLICATION_STATE.farmbot.execSequence(24863, [{
-      kind: "parameter_declaration",
+      kind: "parameter_application",
       args: {
-        default_value: {
-          kind: "tool",
-          args: {
-            tool_id: 7043,
-          },
-        },
         label: "parent",
+        data_value: { kind: "tool", args: { tool_id: 7043 } }
       }
-    },]);
+    }]);
+    
     return res.data;
   });
 }
@@ -239,6 +236,7 @@ const start = () => {
     .then(() => { console.log("CONNECTED TO FARMBOT!"); })
     // If anything goes wrong, throw the error to
     // our error handler function.
+    
     .catch(errorHandler);
 };
 
@@ -310,7 +308,8 @@ if (PASSWORD && EMAIL) {
   //console.log(res);
   //await goToPlant(5);
   //await water(5000);
-  await mountWateringNozzle();
+  let resss = await mountWateringNozzle();
+
   //await unmountWateringNozzle();
   
 
