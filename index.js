@@ -133,9 +133,10 @@ async function waterPlants(time){
   await unmountWateringNozzle();
 }
 
-async function test(){
-  await mountWateringNozzle();
-  await unmountWateringNozzle();
+function test(){
+  mountWateringNozzle().then(
+    unmountWateringNozzle()
+  );
 }
 
 
