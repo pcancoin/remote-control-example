@@ -70,6 +70,7 @@ const APPLICATION_STATE = {
 //Récupère les données du capteur d'humidité, affiche et renvoit la dernière valeur
 function soilSensor(){
   var valeur=0;
+
   APPLICATION_STATE.farmbot.readPin({pin_number: 59, pin_mode: 0}).catch(function(erreur){
       console.log(erreur);
   });
@@ -80,7 +81,6 @@ function soilSensor(){
         i++;
       }
       valeur=res.data[res.data.length-i].value;
-      //console.log(valeur);
       return valeur;
   });
 }
@@ -100,7 +100,6 @@ function plantArray(){
 }
 
 //Positionne le robot en (x,y,z)
-//il faut mettre un return je crois
 function goTo(x,y,z){
   APPLICATION_STATE.farmbot.moveAbsolute({x: x, y: y, z: z});
 }
@@ -132,13 +131,6 @@ async function waterPlants(time){
   }
   await unmountWateringNozzle();
 }
-
-function test(){
-  mountWateringNozzle().then(
-    unmountWateringNozzle()
-  );
-}
-
 
 //Renvoit la liste des séquences
 function getSequences(){
@@ -198,7 +190,6 @@ function precipIntensity(){
     for(let i=0; i<12; i++){
       tabPrecip[i] = res.data.hourly.data[i].precipIntensity;
     }
-    //console.log(tabPrecip);
     return tabPrecip;
   });
 }
@@ -210,7 +201,6 @@ function precipIntensityProba(){
     for(let i=0; i<12; i++){
       tabPrecipProba[i] = res.data.hourly.data[i].precipIntensity*res.data.hourly.data[i].precipProbability;
     }
-    //console.log(tabPrecipProba);
     return tabPrecipProba;
   })
 }
@@ -290,93 +280,25 @@ const start = () => {
     .catch(errorHandler);
 };
 
-// This is the main loop of the application.
-// It gets called every 3,000 ms.
-// You don't need to do it like this in a real app,
-// but it is good enough for our purposes.
-const loop = () => {
-  // Perform busy handling.
-  // This is to prevent sending too many commands.
-  // In a real world application, you should use
-  // promises.
-  if (APPLICATION_STATE.busy) {
-    console.log("Busy. Not running loop.");
-    return;
-  } else {
-    console.log("Move Z Axis " + APPLICATION_STATE.direction);
-    APPLICATION_STATE.busy = true;
-  }
-
-  // Are we moving the z-axis up, or down?
-  if (APPLICATION_STATE.direction == "up") {
-    // Move the bot up.
-    APPLICATION_STATE
-      .farmbot
-      .moveRelative({ x: 0, y: 0, z: 20 })
-      .then(() => {
-        APPLICATION_STATE.direction = "down";
-        APPLICATION_STATE.busy = false;
-      })
-      .catch(errorHandler);
-  } else {
-    // Move the bot down.
-    APPLICATION_STATE
-      .farmbot
-      .moveRelative({ x: 0, y: 0, z: -20 })
-      .then(() => {
-        APPLICATION_STATE.direction = "up";
-        APPLICATION_STATE.busy = false;
-      })
-      .catch(errorHandler);
-  }
-};
-
 // OK. Everything is ready now.
 // Let's connect to the server and start the main
 // loop.
 // I've added a quick "safety check" in case
 // `.env` is missing:
 var main = async () => {
-if (PASSWORD && EMAIL) {
-  // It is important to use promises here-
-  // The run loop won't start until we are finished
-  // connecting t the server. If we don't do this,
-  // the app might try to send commands before we
-  // are connected to the server
-  await start();
-  // setInterval will call a function every X milliseconds.
-  // In our case, it is the main loop.
-  // https://www.w3schools.com/jsref/met_win_setinterval.asp
+  if (PASSWORD && EMAIL) {
+    // It is important to use promises here-
+    // The run loop won't start until we are finished
+    // connecting t the server. If we don't do this,
+    // the app might try to send commands before we
+    // are connected to the server
+    await start();
 
-  //await setInterval(loop, 3000);
-  //await soilSensor();
-  //console.log("intensity");
-  //await precipIntensity();
-  //console.log("intensity+proba");
-  //await precipIntensityProba()
-  //var res = await howMuchWatering(2);
-  //console.log(res);
-  //await goToPlant(5);
-  //await water(5000);
-  //await mountWateringNozzle();
-  //await unmountWateringNozzle();
-  //await getSequences();
-  //await getTime(1.5,2);
-  //await waterPlants(5000);
-  //await test();
-  //getTools();
-  
-
-} else {
-  // You should not see this message if your .env file is correct:
-  throw new Error("You did not set FARMBOT_EMAIL or FARMBOT_PASSWORD in the .env file.");
-}
+  } else {
+    // You should not see this message if your .env file is correct:
+    throw new Error("You did not set FARMBOT_EMAIL or FARMBOT_PASSWORD in the .env file.");
+  }
 };
 
 main();
 
-// That's the end of the tutorial!
-// The most important next step is to learn FarmBotJS.
-// It has everything you need to control a FarmBot remotely.
-// Learn more at:
-//   https://github.com/FarmBot/farmbot-js
