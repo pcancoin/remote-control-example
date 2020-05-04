@@ -99,6 +99,45 @@ function plantArray(){
     });
 }
 
+//Calcule la distance entre 2 points de coordonnées (x,y) et (i,j)
+function distance (x,y,i,j){
+  var res = Math.sqrt((x-i)*(x-i) + (y-j)*(y-j));
+  //console.log(res);
+  return res;
+}
+
+//Renvoit la case du tableau plantArray de la plante la plus proche du point de coordonnées (x,y).
+function distanceMin(x,y, plantes){
+  var min = 3500;
+  var planteNum = 0;
+  for(let i = 0; i<plantes.length; i++){
+    if(plantes[i] != -1){
+      var dist = distance(x,y, plantes[i].x, plantes[i].y);
+      if(dist != 0){
+        if(min > dist){
+          min = dist;
+          planteNum = i;
+        }
+      }
+    }
+  }
+  //console.log(min);
+  return planteNum;
+}
+
+//Renvoit un tableau contenant les numéros des plantes dans l'ordre d'arrosage.
+async function parcours(){
+  var parcours = [];
+  var plantes = await plantArray();
+  parcours[0] = distanceMin(0,0, plantes);
+  for (let i = 1; i<plantes.length; i++){
+    parcours[i] = distanceMin(plantes[parcours[i-1]].x, plantes[parcours[i-1]].y, plantes);
+    plantes[parcours[i-1]] = -1;
+  }
+  //console.log(parcours);
+  return parcours;
+}
+
 //Positionne le robot en (x,y,z)
 function goTo(x,y,z){
   APPLICATION_STATE.farmbot.moveAbsolute({x: x, y: y, z: z});
