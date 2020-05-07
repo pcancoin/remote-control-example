@@ -160,16 +160,6 @@ function water(time){
   setTimeout(stopWater, time);
 }
 
-//arrose toutes les plantes
-async function waterPlants(time){
-  await mountWateringNozzle();
-  var plantes = await plantArray();
-  for (let i=0; i<plantes.length; i++){
-    await goToPlant(i);
-    await water(time);
-  }
-  await unmountWateringNozzle();
-}
 
 //Renvoit la liste des séquences
 function getSequences(){
@@ -220,18 +210,6 @@ async function unmountWateringNozzle(){
   });
 }
 
-
-
-//Renvoit un tableau contenant l'intensité des précipitations des 12 prochaines heures
-function precipIntensity(){
-  return axios.get("https://api.darksky.net/forecast/83a42c27e8d21e20e138b4691e6aa8d3/42.3601,-71.0589").then((res) => {
-    var tabPrecip = [];
-    for(let i=0; i<12; i++){
-      tabPrecip[i] = res.data.hourly.data[i].precipIntensity;
-    }
-    return tabPrecip;
-  });
-}
 
 //Renvoit un tableau contenant l'intensité multipliée par la probabilité de précipitation des 12 prochaines heures
 function precipIntensityProba(){
