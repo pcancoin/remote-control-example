@@ -181,8 +181,6 @@ function getTools(){
 //Monte l'outil tamis pour arroser
 //id de l'outil watering nozzle : 7043
 function mountWateringNozzle(){
-  console.log("Debut");
-  return axios.get("https://my.farm.bot/api/sequences", { 'headers': { 'Authorization': APPLICATION_STATE.token } } ).then((res) => {
     APPLICATION_STATE.farmbot.execSequence(24863, [{
       kind: "parameter_application",
       args: {
@@ -190,15 +188,11 @@ function mountWateringNozzle(){
         data_value: { kind: "tool", args: { tool_id: 7041 } }
       }
     }]);
-    
-    return res.data;
-  });
 }
 
 
-//lance la séquence unmount tool avec l'outil prédéfini dans l'application
-async function unmountWateringNozzle(){
-  return axios.get("https://my.farm.bot/api/sequences", { 'headers': { 'Authorization': APPLICATION_STATE.token } } ).then((res) => {
+//lance la séquence unmount tool avec l'outil tamis pour arroser
+function unmountWateringNozzle(){
     APPLICATION_STATE.farmbot.execSequence(24867, [{
       kind: "parameter_application",
       args: {
@@ -206,8 +200,6 @@ async function unmountWateringNozzle(){
         data_value: { kind: "tool", args: { tool_id: 7041 } }
       }
     }]);
-    return res.data;
-  });
 }
 
 
@@ -310,6 +302,8 @@ var main = async () => {
     // the app might try to send commands before we
     // are connected to the server
     await start();
+    let res = await plantArray();
+    console.log(res);
 
   } else {
     // You should not see this message if your .env file is correct:
